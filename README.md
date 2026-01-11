@@ -1,0 +1,2 @@
+# business_basic_learning
+ビジネス基礎知識の学習用プロジェクトです
