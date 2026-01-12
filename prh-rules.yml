@@ -1,0 +1,86 @@
+version: 1
+rules:
+  # ビジネス関連用語
+  - expected: ビジネス
+    patterns:
+      - ビジネス
+      - business
+    prh: ビジネス用語は日本語表記に統一
+
+  - expected: フレームワーク
+    patterns:
+      - フレームワーク
+      - framework
+    prh: フレームワークは日本語表記に統一
+
+  - expected: リーダーシップ
+    patterns:
+      - リーダーシップ
+      - leadership
+    prh: リーダーシップは日本語表記に統一
+
+  - expected: マネジメント
+    patterns:
+      - マネジメント
+      - management
+    prh: マネジメントは日本語表記に統一
+
+  - expected: マーケティング
+    patterns:
+      - マーケティング
+      - marketing
+    prh: マーケティングは日本語表記に統一
+
+  - expected: アカウンティング
+    patterns:
+      - アカウンティング
+      - accounting
+    prh: アカウンティングは日本語表記に統一
+
+  - expected: ファイナンス
+    patterns:
+      - ファイナンス
+      - finance
+    prh: ファイナンスは日本語表記に統一
+
+  # 略語（すべて大文字に統一）
+  - expected: ROI
+    pattern: /r\.?o\.?i\.?/i
+    prh: ROIは大文字表記に統一
+
+  - expected: NPV
+    pattern: /n\.?p\.?v\.?/i
+    prh: NPVは大文字表記に統一
+
+  - expected: IRR
+    pattern: /i\.?r\.?r\.?/i
+    prh: IRRは大文字表記に統一
+
+  - expected: KPI
+    pattern: /k\.?p\.?i\.?/i
+    prh: KPIは大文字表記に統一
+
+  - expected: SWOT分析
+    patterns:
+      - SWOT分析
+      - swot分析
+      - Swot分析
+    prh: SWOT分析は大文字表記に統一
+
+  - expected: BCGマトリクス
+    patterns:
+      - BCGマトリクス
+      - bcgマトリクス
+      - Bcgマトリクス
+    prh: BCGマトリクスは大文字表記に統一
+
+  - expected: PPM
+    pattern: /p\.?p\.?m\.?/i
+    prh: PPMは大文字表記に統一
+
+  - expected: PEST分析
+    patterns:
+      - PEST分析
+      - pest分析
+      - Pest分析
+    prh: PEST分析は大文字表記に統一

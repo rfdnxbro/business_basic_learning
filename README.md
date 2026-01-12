@@ -82,7 +82,30 @@ docs/
 
 - Markdown
 - Mermaid（図表作成）
-- textlint（文章校正）※将来導入予定
+- textlint（文章校正）
+
+### textlint - 文章校正の自動化
+
+日本語Markdownファイルの品質を自動チェックします。
+
+#### 使用方法
+
+```bash
+# チェックのみ
+npm run lint
+
+# 自動修正
+npm run lint:fix
+```
+
+#### 機能
+
+- **文法チェック**: 助詞の連続、冗長表現、弱い表現などを検出
+- **表記ゆれ統一**: ビジネス用語や略語の表記を自動統一（例: `business` → `ビジネス`、`roi` → `ROI`）
+- **pre-commitフック**: コミット前に自動チェック・修正
+- **CI統合**: PR作成時にGitHub Actionsで自動チェック
+
+詳細な設定は `.textlintrc` と `prh-rules.yml` を参照してください。
 
 ## コントリビューション
 
