@@ -3,7 +3,7 @@
     "comments": true
   },
   "plugins": {
-    "@textlint/markdown": true
+    "markdown": true
   },
   "rules": {
     "preset-ja-technical-writing": {
