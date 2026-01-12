@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
     "bbl@custom-marketplace": true
-  }
+  },
+  "language": "japanese"
 }
