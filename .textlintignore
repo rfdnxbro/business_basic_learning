@@ -1,0 +1,14 @@
+# テンプレートファイル
+docs/TEMPLATE.md
+
+# READMEファイル（プロジェクト説明用）
+README.md
+CLAUDE.md
+
+# ビルド成果物・キャッシュ
+node_modules/
+.textlintcache
+
+# 将来的なドキュメント生成ファイル
+dist/
+build/

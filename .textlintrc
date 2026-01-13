@@ -1,0 +1,30 @@
+{
+  "filters": {
+    "comments": true
+  },
+  "plugins": {
+    "markdown": true
+  },
+  "rules": {
+    "preset-ja-technical-writing": {
+      "sentence-length": {
+        "max": 150
+      },
+      "no-exclamation-question-mark": false,
+      "ja-no-mixed-period": {
+        "allowPeriodMarks": [":", "："]
+      },
+      "no-doubled-joshi": {
+        "strict": false,
+        "allow": ["も", "や"]
+      }
+    },
+    "preset-japanese": {
+      "no-doubled-conjunctive-particle-ga": true,
+      "no-doubled-conjunction": true
+    },
+    "prh": {
+      "rulePaths": ["./prh-rules.yml"]
+    }
+  }
+}

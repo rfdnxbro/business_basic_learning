@@ -1,0 +1,32 @@
+{
+  "name": "business_basic_learning",
+  "version": "1.0.0",
+  "description": "ビジネスパーソン向けのビジネス知識学習教材です。「ヒト」「モノ」「カネ」「思考・志」の4カテゴリで、概念やフレームワークを体系的に学べます。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "lint": "textlint 'docs/**/*.md'",
+    "lint:fix": "textlint --fix 'docs/**/*.md'",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "docs/**/*.md": [
+      "textlint --fix"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "textlint": "^15.5.0",
+    "textlint-filter-rule-comments": "^1.3.0",
+    "textlint-plugin-markdown": "^4.0.6",
+    "textlint-rule-preset-ja-technical-writing": "^12.0.2",
+    "textlint-rule-preset-japanese": "^10.0.4",
+    "textlint-rule-prh": "^6.1.0"
+  }
+}
