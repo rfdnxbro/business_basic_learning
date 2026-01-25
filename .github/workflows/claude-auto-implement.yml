@@ -1,0 +1,239 @@
+name: Claude Auto Implement (Scheduled)
+
+on:
+  schedule:
+    # 5時間ごと: UTC 0, 5, 10, 15, 20時
+    - cron: '0 0,5,10,15,20 * * *'
+  workflow_dispatch: # 手動実行可能
+
+concurrency:
+  group: auto-implement
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_issues: ${{ steps.set-matrix.outputs.has_issues }}
+    steps:
+      - name: Get auto-implement issues
+        id: set-matrix
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # auto-implementラベル付きで、implementingラベルなしのissueを取得
+          issues=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --label "auto-implement" \
+            --state open \
+            --json number,title,labels \
+            --limit 10)
+
+          # implementingラベル付きを除外
+          filtered=$(echo "$issues" | jq '[.[] | select(.labels | map(.name) | contains(["implementing"]) | not)]')
+
+          # 最大2件に制限
+          limited=$(echo "$filtered" | jq '.[0:2]')
+
+          # 件数チェック
+          count=$(echo "$limited" | jq 'length')
+
+          if [ "$count" -eq 0 ]; then
+            echo "No issues to implement"
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+            echo "matrix={\"issue\":[]}" >> $GITHUB_OUTPUT
+          else
+            echo "Found $count issue(s) to implement"
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+            # matrix形式に変換
+            matrix=$(echo "$limited" | jq -c '{issue: .}')
+            echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          fi
+
+  implement:
+    needs: prepare
+    if: needs.prepare.outputs.has_issues == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      max-parallel: 1 # rate limit対策で順次実行
+      fail-fast: false
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add implementing label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --add-label "implementing"
+
+      - name: Fetch issue details
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Issue本文を取得
+          gh issue view ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json title,body \
+            --jq '.title' > issue-title.txt
+
+          gh issue view ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json body \
+            --jq '.body' > issue-body.md
+
+          echo "Issue #${{ matrix.issue.number }}: $(cat issue-title.txt)"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            ## タスク
+            Issue #${{ matrix.issue.number }} の内容に基づいて実装してください。
+
+            ## 実行手順
+            1. issue-title.txt と issue-body.md を読んで内容を把握
+            2. CLAUDE.md を読んでプロジェクトガイドラインを把握
+            3. docs/TEMPLATE.md を読んで記事フォーマットを把握
+            4. 必要な変更を実装
+            5. npm run lint でtextlintエラーがないことを確認
+            6. 変更内容サマリーを /tmp/change-summary.txt に出力
+
+            ## 重要
+            - CLAUDE.md のガイドラインに従う
+            - ファイル名は日本語
+            - Mermaid図を積極的に活用
+            - 導入問題から始める構成を守る
+            - issue-body.md, issue-title.txt は参照のみ（コミットに含めない）
+
+      - name: Clean up temporary files
+        run: |
+          rm -f issue-title.txt issue-body.md
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # ブランチ作成
+          branch_name="auto/implement-issue-${{ matrix.issue.number }}"
+          git checkout -b "$branch_name"
+
+          # コミット
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: $(cat /tmp/change-summary.txt 2>/dev/null || echo '${{ matrix.issue.title }}')" \
+            -m "" \
+            -m "Closes #${{ matrix.issue.number }}" \
+            -m "" \
+            -m "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+          # プッシュ
+          git push origin "$branch_name"
+
+          # PR本文作成
+          issue_number="${{ matrix.issue.number }}"
+          {
+            echo "## Summary"
+            echo ""
+            echo "Issue #${issue_number} の自動実装です。"
+            echo ""
+            echo "## Changes"
+            echo ""
+            if [ -f /tmp/change-summary.txt ]; then
+              cat /tmp/change-summary.txt
+            else
+              echo "Claude Codeによる自動実装"
+            fi
+            echo ""
+            echo "## Test Plan"
+            echo ""
+            echo "- [ ] textlintエラーがないこと"
+            echo "- [ ] 記事フォーマットが正しいこと"
+            echo "- [ ] Mermaid図が正しく表示されること"
+            echo ""
+            echo "---"
+            echo "🤖 Generated with [Claude Code](https://claude.ai/code)"
+          } > /tmp/pr-body.md
+
+          # PR作成
+          gh pr create \
+            --title "feat: ${{ matrix.issue.title }} (closes #${{ matrix.issue.number }})" \
+            --body-file /tmp/pr-body.md \
+            --label "auto-implement" \
+            --label "documentation"
+
+      - name: Remove implementing label
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "implementing" || true
+
+      - name: Update labels on success
+        if: success() && steps.changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --add-label "implemented"
+
+          gh issue comment ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "✅ 自動実装が完了しました。PRをご確認ください。"
+
+      - name: Update labels on failure
+        if: failure() || (success() && steps.changes.outputs.has_changes == 'false')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --add-label "auto-implement-failed"
+
+          if [ "${{ steps.changes.outputs.has_changes }}" == "false" ]; then
+            message="⚠️ 自動実装を試みましたが、変更が生成されませんでした。Issueの内容を確認してください。"
+          else
+            message="❌ 自動実装が失敗しました。ログを確認してください。"
+          fi
+
+          gh issue comment ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "$message"
