@@ -147,18 +147,29 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: ${{ matrix.issue.title }}
+          ISSUE_NUMBER: ${{ matrix.issue.number }}
         run: |
-          # ブランチ作成
-          branch_name="auto/implement-issue-${{ matrix.issue.number }}"
+          # ブランチ作成（タイムスタンプで一意性を確保）
+          timestamp=$(date +%Y%m%d%H%M%S)
+          branch_name="auto/implement-issue-${ISSUE_NUMBER}-${timestamp}"
           git checkout -b "$branch_name"
 
           # コミット
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "feat: $(cat /tmp/change-summary.txt 2>/dev/null || echo '${{ matrix.issue.title }}')" \
+
+          # コミットメッセージ作成（環境変数で安全に処理）
+          if [ -f /tmp/change-summary.txt ]; then
+            commit_title=$(head -n1 /tmp/change-summary.txt)
+          else
+            commit_title="$ISSUE_TITLE"
+          fi
+
+          git commit -m "feat: $commit_title" \
             -m "" \
-            -m "Closes #${{ matrix.issue.number }}" \
+            -m "Closes #${ISSUE_NUMBER}" \
             -m "" \
             -m "Co-Authored-By: Claude <noreply@anthropic.com>"
 
@@ -166,11 +177,10 @@ jobs:
           git push origin "$branch_name"
 
           # PR本文作成
-          issue_number="${{ matrix.issue.number }}"
           {
             echo "## Summary"
             echo ""
-            echo "Issue #${issue_number} の自動実装です。"
+            echo "Issue #${ISSUE_NUMBER} の自動実装です。"
             echo ""
             echo "## Changes"
             echo ""
@@ -190,9 +200,9 @@ jobs:
             echo "🤖 Generated with [Claude Code](https://claude.ai/code)"
           } > /tmp/pr-body.md
 
-          # PR作成
+          # PR作成（環境変数で安全に処理）
           gh pr create \
-            --title "feat: ${{ matrix.issue.title }} (closes #${{ matrix.issue.number }})" \
+            --title "feat: ${ISSUE_TITLE} (closes #${ISSUE_NUMBER})" \
             --body-file /tmp/pr-body.md \
             --label "auto-implement" \
             --label "documentation"
