@@ -148,6 +148,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_TITLE: ${{ matrix.issue.title }}
           ISSUE_NUMBER: ${{ matrix.issue.number }}
         run: |
@@ -157,8 +158,8 @@ jobs:
           git checkout -b "$branch_name"
 
           # コミット
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
 
           # コミットメッセージ作成（環境変数で安全に処理）
@@ -173,6 +174,9 @@ jobs:
             -m "Closes #${ISSUE_NUMBER}" \
             -m "" \
             -m "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+          # 明示的にトークンを使用してリモートURLを設定
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
 
           # プッシュ
           git push origin "$branch_name"
