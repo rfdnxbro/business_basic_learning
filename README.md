@@ -114,3 +114,12 @@ npm run lint:fix
 ### 進捗管理
 
 GitHub Issueで管理しています。
+
+### Issue自動実装
+
+`auto-implement`ラベルを付けたIssueは、Claude Codeが5時間ごとに自動でPRを作成します。
+
+1. Issueを作成し、記事の概要と配置先を記載
+2. `auto-implement`ラベルを付与
+3. 自動でPRが作成される
+4. 人間がレビュー・マージ
