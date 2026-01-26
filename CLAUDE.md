@@ -93,3 +93,26 @@ npm run lint:fix
 ### 進捗管理
 
 GitHub Issueで管理しています。
+
+### Issue自動実装
+
+`auto-implement`ラベル付きIssueは、Claude Codeが5時間ごとに自動実装します。
+
+#### Issueの書き方
+
+自動実装を成功させるため、以下を含めてください：
+
+- **タイトル**: 作成する記事のキーワード名
+- **本文**:
+  - 記事の概要・目的
+  - 含めるべき内容（定義、具体例、関連概念など）
+  - 配置先ディレクトリ（例: `docs/カネ/ファイナンス/`）
+
+#### ラベル体系
+
+| ラベル | 意味 |
+|--------|------|
+| `auto-implement` | 自動実装対象 |
+| `implementing` | 処理中 |
+| `implemented` | 完了（PR作成済み） |
+| `auto-implement-failed` | 失敗 |
