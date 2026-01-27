@@ -30,8 +30,8 @@ jobs:
             --json number,title,labels \
             --limit 10)
 
-          # implementingラベル付きを除外
-          filtered=$(echo "$issues" | jq '[.[] | select(.labels | map(.name) | contains(["implementing"]) | not)]')
+          # implementing / implemented / auto-implement-failed ラベル付きを除外
+          filtered=$(echo "$issues" | jq '[.[] | select(.labels | map(.name) as $names | (($names | contains(["implementing"])) or ($names | contains(["implemented"])) or ($names | contains(["auto-implement-failed"]))) | not)]')
 
           # 最大2件に制限
           limited=$(echo "$filtered" | jq '.[0:2]')
@@ -228,7 +228,8 @@ jobs:
         run: |
           gh issue edit ${{ matrix.issue.number }} \
             --repo ${{ github.repository }} \
-            --add-label "implemented"
+            --add-label "implemented" \
+            --remove-label "auto-implement"
 
           gh issue comment ${{ matrix.issue.number }} \
             --repo ${{ github.repository }} \
